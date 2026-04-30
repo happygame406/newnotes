@@ -9,6 +9,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
@@ -201,13 +202,35 @@ fun NoteCard(note: Note, onClick: () -> Unit, onDeleteClick: () -> Unit) {
 
 @Composable
 fun DetailScreen(noteId: Long) {
+    val context = LocalContext.current
+    val db = NoteDatabase.getDatabase(context)
+    val noteDao = db.noteDao()
+    var note by remember { mutableStateOf<Note?>(null) }
+
+    LaunchedEffect(noteId) {
+        noteDao.getAllNotes().collect { notes ->
+            note = notes.find { it.id == noteId }
+        }
+    }
+
+    val dateFormat = remember { SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault()) }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text(text = "ID заметки: $noteId")
+        if (note != null) {
+            Text(text = "Заголовок: ${note!!.title}", style = MaterialTheme.typography.headlineSmall)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(text = "Содержание: ${note!!.content}")
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(text = "Дата: ${dateFormat.format(Date(note!!.timestamp))}")
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(text = "ID: ${note!!.id}")
+        } else {
+            Text("Заметка не найдена")
+        }
     }
 }
